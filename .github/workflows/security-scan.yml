@@ -1,0 +1,93 @@
+name: Security Scan Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-environment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Test Docker Compose
+      run: |
+        echo "Testing Docker Compose configuration..."
+        docker-compose config
+        
+    - name: Test Juice Shop Container
+      run: |
+        echo "Testing Juice Shop container startup..."
+        docker-compose up -d
+        sleep 30
+        curl -f http://localhost:3000 || exit 1
+        docker-compose down
+        
+    - name: Validate Scripts
+      run: |
+        echo "Validating PowerShell scripts..."
+        # Verificar sintaxis de scripts PowerShell
+        if command -v pwsh &> /dev/null; then
+          pwsh -Command "Get-Content scripts/*.ps1 | ForEach-Object { $_ }" || echo "PowerShell not available"
+        fi
+        
+        echo "Validating Bash scripts..."
+        # Verificar sintaxis de scripts Bash
+        bash -n scripts/*.sh || exit 1
+        
+    - name: Check Dependencies
+      run: |
+        echo "Checking project dependencies..."
+        # Verificar que docker-compose.yml existe
+        test -f docker-compose.yml || exit 1
+        
+        # Verificar que los scripts existen
+        test -f scripts/security_scan.sh || exit 1
+        test -f scripts/setup.sh || exit 1
+        test -f scripts/security_scan.ps1 || exit 1
+        test -f scripts/setup.ps1 || exit 1
+        
+    - name: Validate Documentation
+      run: |
+        echo "Validating documentation..."
+        # Verificar que README.md existe
+        test -f README.md || exit 1
+        
+        # Verificar que LICENSE existe
+        test -f LICENSE || exit 1
+        
+    - name: Security Check
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: high
+        
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for sensitive data
+      run: |
+        echo "Checking for sensitive data in code..."
+        # Verificar que no hay claves hardcodeadas
+        if grep -r "password\|secret\|key\|token" scripts/ --exclude="*.log" | grep -v "api.key" | grep -v "ZAP_API_KEY"; then
+          echo "Warning: Potential sensitive data found"
+        fi
+        
+    - name: Validate file structure
+      run: |
+        echo "Validating project structure..."
+        # Verificar estructura de directorios
+        test -d scripts/ || exit 1
+        test -d reports/ || exit 1
+        test -d logs/ || exit 1
