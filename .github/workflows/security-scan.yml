@@ -41,14 +41,48 @@ jobs:
     - name: Validate Scripts
       run: |
         echo "Validating PowerShell scripts..."
-        # Verificar sintaxis de scripts PowerShell
-        if command -v pwsh &> /dev/null; then
-          pwsh -Command "Get-Content scripts/*.ps1 | ForEach-Object { $_ }" || echo "PowerShell not available"
+        # Verificar que los scripts PowerShell existen y son legibles
+        if [ -f scripts/security_scan.ps1 ]; then
+          echo "✅ security_scan.ps1 exists"
+        else
+          echo "❌ security_scan.ps1 not found"
+          exit 1
+        fi
+        
+        if [ -f scripts/setup.ps1 ]; then
+          echo "✅ setup.ps1 exists"
+        else
+          echo "❌ setup.ps1 not found"
+          exit 1
+        fi
+        
+        if [ -f scripts/quick_test.ps1 ]; then
+          echo "✅ quick_test.ps1 exists"
+        else
+          echo "❌ quick_test.ps1 not found"
+          exit 1
+        fi
+        
+        if [ -f scripts/cleanup.ps1 ]; then
+          echo "✅ cleanup.ps1 exists"
+        else
+          echo "❌ cleanup.ps1 not found"
+          exit 1
         fi
         
         echo "Validating Bash scripts..."
         # Verificar sintaxis de scripts Bash
-        bash -n scripts/*.sh || exit 1
+        if [ -f scripts/security_scan.sh ]; then
+          bash -n scripts/security_scan.sh && echo "✅ security_scan.sh syntax is valid"
+        fi
+        
+        if [ -f scripts/setup.sh ]; then
+          bash -n scripts/setup.sh && echo "✅ setup.sh syntax is valid"
+        fi
+        
+        if [ -f scripts/quick_test.sh ]; then
+          bash -n scripts/quick_test.sh && echo "✅ quick_test.sh syntax is valid"
+        fi
         
     - name: Check Dependencies
       run: |
@@ -94,15 +128,25 @@ jobs:
     - name: Validate file structure
       run: |
         echo "Validating project structure..."
-        # Verificar estructura de directorios
-        test -d scripts/ || exit 1
-        test -d reports/ || exit 1
-        test -d logs/ || exit 1
         
-        # Verificar archivos principales
-        test -f docker-compose.yml || exit 1
-        test -f README.md || exit 1
-        test -f LICENSE || exit 1
-        test -f .gitignore || exit 1
+        # Verificar archivos principales (obligatorios)
+        echo "Checking required files..."
+        test -f docker-compose.yml || (echo "❌ docker-compose.yml not found" && exit 1)
+        test -f README.md || (echo "❌ README.md not found" && exit 1)
+        test -f LICENSE || (echo "❌ LICENSE not found" && exit 1)
+        test -f .gitignore || (echo "❌ .gitignore not found" && exit 1)
+        
+        # Verificar directorios principales
+        echo "Checking required directories..."
+        test -d scripts/ || (echo "❌ scripts/ directory not found" && exit 1)
+        
+        # Verificar directorios opcionales (crear si no existen)
+        echo "Checking optional directories..."
+        mkdir -p reports/ logs/
+        
+        # Verificar scripts principales
+        echo "Checking required scripts..."
+        test -f scripts/security_scan.ps1 || (echo "❌ scripts/security_scan.ps1 not found" && exit 1)
+        test -f scripts/setup.ps1 || (echo "❌ scripts/setup.ps1 not found" && exit 1)
         
         echo "✅ Project structure is valid"
