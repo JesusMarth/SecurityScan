@@ -106,6 +106,7 @@ jobs:
         test -f LICENSE || exit 1
         
     - name: Security Check
+      if: github.event_name == 'pull_request'
       uses: actions/dependency-review-action@v3
       with:
         fail-on-severity: high
