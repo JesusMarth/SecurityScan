@@ -18,6 +18,13 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
+    - name: Install Docker Compose
+      run: |
+        echo "Installing Docker Compose..."
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+        
     - name: Test Docker Compose
       run: |
         echo "Testing Docker Compose configuration..."
@@ -91,3 +98,11 @@ jobs:
         test -d scripts/ || exit 1
         test -d reports/ || exit 1
         test -d logs/ || exit 1
+        
+        # Verificar archivos principales
+        test -f docker-compose.yml || exit 1
+        test -f README.md || exit 1
+        test -f LICENSE || exit 1
+        test -f .gitignore || exit 1
+        
+        echo "✅ Project structure is valid"
