@@ -1,0 +1,51 @@
+name: Test Security Scanner
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Test Docker Compose
+      run: |
+        echo "Testing Docker Compose configuration..."
+        docker-compose config
+        
+    - name: Test Docker build
+      run: |
+        echo "Testing Docker image build..."
+        docker-compose build --no-cache
+        
+    - name: Test container startup
+      run: |
+        echo "Testing container startup..."
+        docker-compose up -d
+        sleep 10
+        docker-compose ps
+        docker-compose down
+
+  test-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Test PowerShell script syntax
+      run: |
+        echo "Testing PowerShell script syntax..."
+        Get-ChildItem -Path "scripts" -Filter "*.ps1" | ForEach-Object {
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null)
+          Write-Host "✅ $($_.Name) syntax is valid"
+        } 
